@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+# Never commit the source PDFs: the NCEES practice exam is copyrighted and the spec
+# copy is stamped "For In-house Use Only. Do Not Distribute."
+*.pdf

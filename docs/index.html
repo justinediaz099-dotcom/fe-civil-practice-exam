@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FE Civil Practice Exam</title>
+<style>
+  /* Light and dark are SELECTED sets, not an automatic inversion. The accent and the
+     status trio are the values that passed palette validation (lightness band, chroma
+     floor, CVD separation); the green carries a contrast WARN on light surfaces, which
+     is why every status is also labelled in words and carries a glyph. */
+  :root{
+    --surface:#fcfcfb; --plane:#f6f6f4; --raised:#fff;
+    --ink:#121211; --ink-2:#3d3d3a; --ink-3:#6e6e69;
+    --rule:#e2e2de; --rule-2:#cfcfc9;
+    --accent:#2a78d6; --accent-soft:#eaf1fb;
+    --good:#1baf7a; --good-soft:#e7f7f1;
+    --warn:#eb6834; --warn-soft:#fdeee7;
+    --bad:#d03b3b;  --bad-soft:#fbebeb;
+    --shadow:0 1px 2px rgba(0,0,0,.05), 0 6px 18px rgba(0,0,0,.05);
+  }
+  html[data-theme="dark"]{
+    --surface:#1b1b1a; --plane:#111110; --raised:#232322;
+    --ink:#f7f7f5; --ink-2:#d2d2ce; --ink-3:#95958f;
+    --rule:#33332f; --rule-2:#43433e;
+    --accent:#3987e5; --accent-soft:#16283d;
+    --good:#199e70; --good-soft:#10291f;
+    --warn:#d95926; --warn-soft:#2e1a10;
+    --bad:#c23b3b;  --bad-soft:#2d1414;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--plane);color:var(--ink);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,sans-serif;
+       -webkit-text-size-adjust:100%}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px 80px}
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.02em}
+  h2{font-size:17px;margin:26px 0 10px;letter-spacing:-.01em}
+  h3{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.07em;
+     color:var(--ink-3)}
+  p{margin:0 0 12px}
+  a{color:var(--accent)}
+  code{font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+       background:var(--plane);padding:1px 5px;border-radius:4px;border:1px solid var(--rule)}
+  .muted{color:var(--ink-3)}
+  .small{font-size:13px}
+  .card{background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+        padding:18px 20px;margin:0 0 16px;box-shadow:var(--shadow)}
+  button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid var(--rule-2);
+         background:var(--raised);color:var(--ink);padding:9px 15px;transition:.12s}
+  button:hover:not(:disabled){border-color:var(--ink-3)}
+  button:disabled{cursor:default;opacity:.55}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .primary:hover:not(:disabled){filter:brightness(1.07);border-color:var(--accent)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .spread{display:flex;justify-content:space-between;align-items:center;gap:12px;
+          flex-wrap:wrap}
+
+  /* ---------- top bar ---------- */
+  header{position:sticky;top:0;z-index:30;background:var(--surface);
+         border-bottom:1px solid var(--rule);margin-bottom:18px}
+  .hbar{max-width:1180px;margin:0 auto;padding:10px 22px;
+        display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{font-weight:700;letter-spacing:-.01em;margin-right:auto}
+  .pill{font-size:13px;font-variant-numeric:tabular-nums;padding:4px 10px;
+        border-radius:999px;border:1px solid var(--rule);background:var(--plane);
+        white-space:nowrap}
+  .pill b{font-weight:700}
+  .pill.alarm{border-color:var(--bad);color:var(--bad);background:var(--bad-soft)}
+  .iconbtn{padding:6px 10px;font-size:13px}
+  .bar{height:4px;background:var(--rule);border-radius:99px;overflow:hidden;width:100%}
+  .bar > i{display:block;height:100%;background:var(--accent);transition:width .2s}
+
+  /* ---------- start screen ---------- */
+  .hero{font-size:16px;color:var(--ink-2)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;
+        font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--rule)}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);
+     font-weight:600}
+  tfoot td{font-weight:700;border-bottom:none}
+  .opt{display:flex;gap:11px;align-items:flex-start;padding:11px 13px;
+       border:1px solid var(--rule);border-radius:10px;cursor:pointer;background:var(--raised)}
+  .opt:hover{border-color:var(--ink-3)}
+  .opt input{margin:3px 0 0}
+  .opt b{display:block}
+  .optgrid{display:grid;gap:9px}
+
+  /* Settings read across the page, not down it: three independent choices sit side by
+     side so the whole setup is visible without scrolling. Collapses on narrow screens. */
+  .setcols{display:grid;gap:22px;grid-template-columns:1fr}
+  @media (min-width:860px){ .setcols{grid-template-columns:repeat(3,1fr)} }
+  .setcols > div{min-width:0}
+  .setcols h3{margin-top:0}
+  .setcols .opt{height:100%}
+
+  /* Exam view: question on the left, navigator pinned on the right. */
+  .examgrid{display:grid;gap:20px;grid-template-columns:minmax(0,1fr);align-items:start}
+  @media (min-width:980px){
+    .examgrid{grid-template-columns:minmax(0,1fr) 288px}
+    .col-side{position:sticky;top:74px}
+    .col-side .card{max-height:calc(100vh - 150px);overflow:auto}
+    .col-side .navgrid{grid-template-columns:repeat(5,1fr)}
+  }
+  .col-main{min-width:0}
+  /* Measure cap: a 900px-wide line of prose is tiring to read even on a wide screen. */
+  .prompt{max-width:70ch}
+  .fb ol, .fb p{max-width:78ch}
+
+  /* Status, not category: three bands with a word and a glyph, never color alone. */
+  .band{display:inline-flex;gap:6px;align-items:center;white-space:nowrap;
+        font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;
+        border:1px solid}
+  .b-lo{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+  .b-mid{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+  .b-hi{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+  .abar > i.lo{background:var(--bad)}
+  .abar > i.mid{background:var(--warn)}
+  .abar > i.hi{background:var(--good)}
+  td.sc-lo{color:var(--bad);font-weight:700}
+  td.sc-mid{color:var(--warn);font-weight:700}
+  td.sc-hi{color:var(--good);font-weight:700}
+
+  /* Good-luck dialog */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;
+         display:grid;place-items:center;padding:22px}
+  .modal{background:var(--surface);border:1px solid var(--rule);border-radius:14px;
+         padding:26px 28px;max-width:470px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35);
+         text-align:center}
+  .modal .gl{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:0 0 10px}
+  .modal ul{text-align:left;margin:16px 0 20px;padding-left:20px;font-size:14px;
+            color:var(--ink-2)}
+  .modal ul li{margin-bottom:6px}
+
+  /* ---------- question ---------- */
+  .qmeta{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .tag{font-size:11.5px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);
+       color:var(--accent);border:1px solid transparent;font-weight:600}
+  html[data-theme="dark"] .tag{color:#9fc6f5}
+  .tag.n{background:var(--plane);color:var(--ink-3);font-weight:500;border-color:var(--rule)}
+  .qnum{font-weight:700;font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .prompt{font-size:16.5px;line-height:1.5;margin:0 0 16px}
+  .choices{display:grid;gap:9px}
+  .ch{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;
+      padding:12px 14px;border:1.5px solid var(--rule);background:var(--raised);
+      border-radius:10px;line-height:1.45}
+  .ch .key{flex:none;width:23px;height:23px;border-radius:6px;background:var(--plane);
+           border:1px solid var(--rule);display:grid;place-items:center;
+           font-size:12.5px;font-weight:700;color:var(--ink-2)}
+  .ch .val{flex:1;font-variant-numeric:tabular-nums}
+  .ch .mark{flex:none;font-weight:700;font-size:13px;white-space:nowrap}
+  .ch.sel{border-color:var(--accent)}
+  .ch.ok{border-color:var(--good);background:var(--good-soft)}
+  .ch.ok .key{background:var(--good);border-color:var(--good);color:#fff}
+  .ch.no{border-color:var(--bad);background:var(--bad-soft)}
+  .ch.no .key{background:var(--bad);border-color:var(--bad);color:#fff}
+  .ch.dim{opacity:.62}
+  .ch:disabled{cursor:default}
+  .numrow{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  input[type=text]{font:inherit;padding:10px 13px;border-radius:9px;
+       border:1.5px solid var(--rule-2);background:var(--raised);color:var(--ink);
+       width:200px;font-variant-numeric:tabular-nums}
+  input[type=text]:focus{outline:2px solid var(--accent);outline-offset:1px;
+       border-color:var(--accent)}
+  .unit{color:var(--ink-3);font-size:14px}
+
+  /* ---------- feedback ---------- */
+  .fb{margin-top:16px;border-radius:11px;padding:14px 16px;border:1px solid var(--rule);
+      background:var(--plane)}
+  .fb.ok{border-color:var(--good);background:var(--good-soft)}
+  .fb.no{border-color:var(--bad);background:var(--bad-soft)}
+  .fb .vd{font-weight:700;display:flex;gap:8px;align-items:center;margin-bottom:8px;
+          font-size:15px}
+  .fb h4{margin:14px 0 6px;font-size:11.5px;text-transform:uppercase;
+         letter-spacing:.07em;color:var(--ink-3)}
+  .fb ol{margin:0;padding-left:20px}
+  .fb ol li{margin-bottom:5px}
+  .fb pre{margin:0;white-space:pre-wrap;font:12.5px/1.5 ui-monospace,SFMono-Regular,
+          Menlo,monospace;background:var(--surface);border:1px solid var(--rule);
+          border-radius:8px;padding:10px 12px;overflow-x:auto}
+  .why{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--warn);
+       border-radius:8px;padding:10px 12px;margin:0 0 4px;font-size:14px}
+  .pit{font-size:13.5px;color:var(--ink-2);border-left:3px solid var(--rule-2);
+       padding-left:11px;margin:0}
+
+  /* ---------- navigator ---------- */
+  .navgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:6px}
+  .nb{aspect-ratio:1;display:grid;place-items:center;font-size:12px;font-weight:600;
+      border-radius:7px;border:1px solid var(--rule);background:var(--raised);
+      padding:0;font-variant-numeric:tabular-nums;position:relative}
+  .nb.ok{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+  .nb.no{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+  .nb.ans{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .nb.cur{outline:2px solid var(--ink);outline-offset:1px}
+  .nb.flag::after{content:"";position:absolute;top:2px;right:2px;width:6px;height:6px;
+      border-radius:99px;background:var(--warn)}
+
+  /* ---------- results ---------- */
+  .score{display:flex;gap:24px;align-items:baseline;flex-wrap:wrap}
+  .score .big{font-size:52px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .score .of{font-size:17px;color:var(--ink-3)}
+  .verdict{display:inline-flex;gap:8px;align-items:center;font-weight:700;font-size:14px;
+      padding:6px 13px;border-radius:999px;border:1px solid}
+  .v-good{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+  .v-warn{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+  .v-bad{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+  /* One hue for 14 areas: a sequential scale, never 14 cycled categorical colors. */
+  /* display:block matters - this is a <span>, and an inline box ignores height. */
+  .abar{display:block;height:9px;border-radius:99px;background:var(--rule);
+        overflow:hidden;min-width:70px}
+  .abar > i{display:block;height:100%;background:var(--accent)}
+  td.barcell{width:34%;padding-right:0}
+  .miss{border:1px solid var(--rule);border-radius:10px;margin-bottom:10px;
+        background:var(--surface);overflow:hidden}
+  .miss > summary{cursor:pointer;padding:11px 14px;font-size:14px;display:flex;gap:9px;
+        align-items:flex-start;list-style:none}
+  .miss > summary::-webkit-details-marker{display:none}
+  .miss > summary::before{content:"\25B8";color:var(--ink-3);flex:none;margin-top:1px}
+  .miss[open] > summary::before{content:"\25BE"}
+  .miss .body{padding:0 14px 14px}
+  .hide{display:none !important}
+  @media print{
+    header,.noprint{display:none !important}
+    body{background:#fff}
+    .card{box-shadow:none;break-inside:avoid}
+  }
+  @media (max-width:560px){
+    .score .big{font-size:40px}
+    .hbar{gap:8px}
+    .wrap{padding:0 13px 70px}
+  }
+</style>
+</head>
+<body>
+
+<header class="noprint">
+  <div class="hbar">
+    <span class="brand">FE Civil &mdash; Practice Exam</span>
+    <span class="pill hide" id="pScore"></span>
+    <span class="pill hide" id="pProg"></span>
+    <span class="pill hide" id="pTime"></span>
+    <button class="iconbtn hide" id="bPause">Pause</button>
+    <button class="iconbtn" id="bTheme" title="Toggle light/dark">Dark</button>
+  </div>
+  <div class="bar hide" id="topbar"><i style="width:0"></i></div>
+</header>
+
+<div class="wrap">
+
+  <!-- ================= START ================= -->
+  <section id="start">
+    <h1>FE Civil Practice Exam</h1>
+    <p class="hero">The Fundamentals of Engineering exam is the first step toward
+      licensure as a Professional Engineer. Passing it earns you Engineer-in-Training
+      (EIT) or Engineer Intern (EI) status.</p>
+
+    <div class="card" id="resumeCard" style="display:none">
+      <h3>Unfinished exam</h3>
+      <p id="resumeTxt" class="small"></p>
+      <div class="row">
+        <button class="primary" id="bResume">Resume exam</button>
+        <button id="bDiscard">Discard and start over</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>How this works</h3>
+      <p class="small">110 questions drawn to match the official NCEES FE Civil exam
+        specification, with the same number of questions per knowledge area as the real
+        test. Most are multiple choice; about a quarter are numeric entry, because the
+        real computer-based test mixes both. You get 350 minutes, the same working time
+        as the real exam once the tutorial and scheduled break are removed.</p>
+      <p class="small"><b>Every question has a full worked solution</b>, the formula it
+        comes from, and&mdash;when you pick a wrong option&mdash;an explanation of the
+        specific mistake that option represents.</p>
+    </div>
+
+    <div class="card">
+      <div class="setcols">
+        <div>
+          <h3>Choose your settings</h3>
+          <div class="optgrid">
+            <label class="opt">
+              <input type="radio" name="fb" value="instant" checked>
+              <span><b>Show the answer right after I choose</b>
+                <span class="muted small">Best for studying. Correct or incorrect
+                immediately, with the full solution, and your score builds as you
+                go.</span>
+              </span>
+            </label>
+            <label class="opt">
+              <input type="radio" name="fb" value="end">
+              <span><b>Hold all answers until the end</b>
+                <span class="muted small">Matches real exam conditions. No feedback and
+                no running score until you submit.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <h3>Length</h3>
+          <div class="optgrid">
+            <label class="opt">
+              <input type="radio" name="len" value="110" checked>
+              <span><b>Full exam &mdash; 110 questions</b>
+                <span class="muted small">Blueprint-weighted across all 14 knowledge
+                areas. 350 minutes.</span></span>
+            </label>
+            <label class="opt">
+              <input type="radio" name="len" value="30">
+              <span><b>Short set &mdash; 30 questions</b>
+                <span class="muted small">Same weighting, about 95 minutes.</span></span>
+            </label>
+            <label class="opt">
+              <input type="radio" name="len" value="area">
+              <span><b>One area at a time</b>
+                <span class="muted small">Drill a single topic.</span>
+                <select id="areaSel" style="margin-top:7px;font:inherit;padding:7px;
+                    border-radius:8px;border:1px solid var(--rule-2);
+                    background:var(--raised);color:var(--ink);width:100%;
+                    max-width:100%"></select>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <h3>Question order</h3>
+          <div class="optgrid">
+            <label class="opt">
+              <input type="radio" name="ord" value="grouped" checked>
+              <span><b>Grouped by knowledge area</b>
+                <span class="muted small">All 14 areas in specification order, one
+                section at a time, with a section counter as you go. Easier to study
+                and easier to see which topic needs work.</span></span>
+            </label>
+            <label class="opt">
+              <input type="radio" name="ord" value="mixed">
+              <span><b>Shuffled across all areas</b>
+                <span class="muted small">Statics, then geotech, then ethics, with no
+                warning. Harder, and it trains topic-switching.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:20px">
+        <button class="primary" id="bStart">Start exam</button>
+        <span class="muted small" id="bankInfo"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Exam specification</h3>
+      <table id="specTable"><thead><tr>
+        <th>Knowledge area</th><th>Real exam</th><th id="specHead">On your exam</th>
+      </tr></thead><tbody></tbody>
+      <tfoot><tr><td>Total</td><td id="specReal"></td><td id="specMine"></td></tr></tfoot>
+      </table>
+      <p class="muted small" style="margin-top:12px" id="specNote"></p>
+    </div>
+  </section>
+
+  <!-- ================= EXAM ================= -->
+  <section id="exam" class="hide">
+   <div class="examgrid">
+    <div class="col-main">
+    <div class="card" id="qcard">
+      <div class="qmeta">
+        <span class="qnum" id="qnum"></span>
+        <span class="tag" id="qarea"></span>
+        <span class="tag n" id="qtopic"></span>
+        <span class="tag n" id="qdiff"></span>
+        <span class="qnum hide" id="qsec"></span>
+      </div>
+      <p class="prompt" id="qprompt"></p>
+      <div class="choices" id="qchoices"></div>
+      <div class="numrow hide" id="qnumrow">
+        <input type="text" id="qinput" inputmode="decimal" autocomplete="off"
+               placeholder="Your answer" aria-label="Numeric answer">
+        <span class="unit" id="qunit"></span>
+        <button class="primary" id="bCheck">Check</button>
+      </div>
+      <div class="fb hide" id="fb"></div>
+    </div>
+
+    <div class="spread noprint" style="margin-bottom:4px">
+      <div class="row">
+        <button id="bPrev">&larr; Previous</button>
+        <button id="bNext">Next &rarr;</button>
+      </div>
+      <div class="row">
+        <button id="bFlag">Flag for review</button>
+        <button class="primary" id="bFinish">Finish &amp; score</button>
+      </div>
+    </div>
+    </div><!-- /col-main -->
+
+    <aside class="col-side noprint">
+      <div class="card" style="margin-bottom:10px">
+        <h3 style="margin:0 0 10px">Question navigator</h3>
+        <div class="navgrid" id="navgrid"></div>
+        <p class="muted small" id="navLegend" style="margin:12px 0 0"></p>
+      </div>
+      <p class="muted small" style="margin:0">Keyboard: <code>1</code>&ndash;<code>4</code>
+        choose, <code>Enter</code> next, <code>&larr;</code> <code>&rarr;</code> move,
+        <code>f</code> flag.</p>
+    </aside>
+   </div><!-- /examgrid -->
+  </section>
+
+  <!-- ================= RESULTS ================= -->
+  <section id="results" class="hide"></section>
+
+</div>
+
+<!-- ================= GOOD LUCK ================= -->
+<div class="scrim hide" id="scrim" role="dialog" aria-modal="true"
+     aria-labelledby="glTitle">
+  <div class="modal">
+    <p class="gl" id="glTitle">Good luck! &#127808;</p>
+    <p class="muted" id="glSub"></p>
+    <ul id="glList"></ul>
+    <button class="primary" id="bBegin" style="width:100%;padding:12px">
+      Begin &mdash; start the clock
+    </button>
+    <p class="muted small" style="margin:12px 0 0">The timer does not start until you
+      press this.</p>
+  </div>
+</div>
+
+<script src="bank.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ------------------------------------------------------------------ bank + setup */
+if (!window.FE_BANK) {
+  document.getElementById('start').innerHTML =
+    '<div class="card"><h3>Question bank did not load</h3><p>This page needs ' +
+    '<code>bank.js</code> sitting next to <code>index.html</code>. Keep the two files ' +
+    'together.</p></div>';
+  return;
+}
+var BANK  = window.FE_BANK;
+var QS    = BANK.questions;
+var AREAS = BANK.meta.areas;
+var BYID  = {};
+QS.forEach(function(q){ BYID[q.id] = q; });
+
+var SKEY = 'feCivil.exam.v1';
+var HKEY = 'feCivil.history.v1';
+var TKEY = 'feCivil.theme.v1';
+var DIFFNAME = {1:'Straightforward', 2:'Moderate', 3:'Challenging'};
+
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function store(k, v){
+  try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); }
+  catch (e) { /* private mode: the exam still works, it just will not survive a reload */ }
+}
+function load(k){
+  try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; }
+}
+
+/* ------------------------------------------------------------------ theme */
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  $('bTheme').textContent = t === 'dark' ? 'Light' : 'Dark';
+  store(TKEY, t);
+}
+setTheme(load(TKEY) ||
+  (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+$('bTheme').onclick = function(){
+  setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  if (S && S.done) renderResults();
+};
+
+/* ------------------------------------------------------------------ exam building */
+function shuffle(a, rnd){
+  for (var i = a.length - 1; i > 0; i--){
+    var j = Math.floor((rnd ? rnd() : Math.random()) * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+/* Allocate `total` questions across the 14 areas, keeping the real exam's weighting.
+
+   Two regimes, because one rule cannot serve both:
+     - A full-length exam (total at or above the sum of the blueprint minimums, 100)
+       starts every area at its MINIMUM and hands the remainder to the areas with the
+       largest blueprint maximum. That guarantees every area lands inside its published
+       low-high range, which is what makes the 110 set a faithful mock.
+     - A SHORT set cannot give every area its minimum - the minimums alone come to 100.
+       There it allocates in proportion to each area's blueprint midpoint, with at least
+       one question per area, so a 30-question set still mirrors the exam's shape.
+   Never exceeds the number of questions actually written for an area. */
+function allocate(total){
+  var pool = {}, order, want = {}, sum = 0, i, a, n;
+  AREAS.forEach(function(x){
+    pool[x.name] = QS.filter(function(q){ return q.area === x.name; });
+  });
+  var lowSum = AREAS.reduce(function(s, x){
+    return s + Math.min(x.low, pool[x.name].length);
+  }, 0);
+
+  if (total >= lowSum){
+    AREAS.forEach(function(x){
+      want[x.name] = Math.min(x.low, pool[x.name].length);
+      sum += want[x.name];
+    });
+    order = AREAS.slice().sort(function(x, y){ return y.high - x.high; });
+    var guard = 0;
+    while (sum < total && guard++ < 4000){
+      var moved = false;
+      for (i = 0; i < order.length && sum < total; i++){
+        a = order[i];
+        if (want[a.name] < Math.min(a.high, pool[a.name].length)){
+          want[a.name]++; sum++; moved = true;
+        }
+      }
+      if (!moved) break;       // every area is at its cap
+    }
+    // Bank cannot reach `total` within the blueprint highs: relax the high cap rather
+    // than hand back a short exam.
+    for (i = 0; i < order.length && sum < total; i++){
+      n = order[i].name;
+      while (want[n] < pool[n].length && sum < total){ want[n]++; sum++; }
+    }
+  } else {
+    var wsum = AREAS.reduce(function(s, x){ return s + (x.low + x.high) / 2; }, 0);
+    // Guarantee one question per area only when there is actually room for all 14.
+    var floorOne = total >= AREAS.length;
+    var rema = [];
+    AREAS.forEach(function(x){
+      var raw = total * ((x.low + x.high) / 2) / wsum;
+      var base = Math.floor(raw);
+      if (floorOne) base = Math.max(1, base);
+      base = Math.min(base, pool[x.name].length);
+      want[x.name] = base;
+      sum += base;
+      rema.push({name: x.name, frac: raw - Math.floor(raw)});
+    });
+    // Too many after the floor step: trim the areas with the smallest fractional claim.
+    rema.sort(function(x, y){ return x.frac - y.frac; });
+    for (i = 0; sum > total && i < rema.length * 40; i++){
+      n = rema[i % rema.length].name;
+      if (want[n] > (floorOne ? 1 : 0)){ want[n]--; sum--; }
+    }
+    // Still short: top up the areas with the largest fractional claim.
+    rema.sort(function(x, y){ return y.frac - x.frac; });
+    for (i = 0; sum < total && i < rema.length * 40; i++){
+      n = rema[i % rema.length].name;
+      if (want[n] < pool[n].length){ want[n]++; sum++; }
+    }
+  }
+
+  var picked = [];
+  AREAS.forEach(function(x){
+    picked = picked.concat(shuffle(pool[x.name].slice()).slice(0, want[x.name]));
+  });
+  return shuffle(picked).map(function(q){ return q.id; });
+}
+
+/* Specification order, so a grouped exam walks the 14 areas the way the published
+   blueprint lists them rather than alphabetically. */
+var AREA_RANK = {};
+AREAS.forEach(function(a, k){ AREA_RANK[a.name] = k; });
+
+function groupByArea(ids){
+  // Stable sort by specification order. Questions keep their shuffled order WITHIN an
+  // area, so the section itself is still different every sitting.
+  return ids.map(function(id, k){ return {id: id, k: k}; })
+            .sort(function(x, y){
+              var d = AREA_RANK[BYID[x.id].area] - AREA_RANK[BYID[y.id].area];
+              return d !== 0 ? d : x.k - y.k;
+            })
+            .map(function(o){ return o.id; });
+}
+
+function buildExam(len, areaName, fbMode, ordMode){
+  var ids;
+  if (len === 'area'){
+    ids = shuffle(QS.filter(function(q){ return q.area === areaName; })
+                    .map(function(q){ return q.id; }));
+  } else {
+    ids = allocate(parseInt(len, 10));
+    if (ordMode === 'grouped') ids = groupByArea(ids);
+  }
+  // Minutes track the real exam's pace: 350 min for 110 questions.
+  var mins = Math.max(10, Math.round(ids.length * 350 / 110));
+  return {
+    ids: ids, i: 0, ans: {}, flags: {}, fb: fbMode, ord: ordMode,
+    limit: mins * 60, spent: 0, paused: false, done: false,
+    label: len === 'area' ? areaName : (ids.length + '-question exam'),
+    started: Date.now()
+  };
+}
+
+/* Position of the current question inside its own area block. Only meaningful for a
+   grouped exam, where the blocks are contiguous. */
+function sectionPos(){
+  var area = BYID[S.ids[S.i]].area;
+  var first = -1, n = 0;
+  S.ids.forEach(function(id, k){
+    if (BYID[id].area !== area) return;
+    if (first < 0) first = k;
+    n++;
+  });
+  var seen = 0;
+  for (var k = first; k <= S.i; k++){ if (BYID[S.ids[k]].area === area) seen++; }
+  var areasPresent = [];
+  S.ids.forEach(function(id){
+    var a = BYID[id].area;
+    if (areasPresent.indexOf(a) < 0) areasPresent.push(a);
+  });
+  return {idx: seen, of: n, sec: areasPresent.indexOf(area) + 1, secs: areasPresent.length};
+}
+
+/* ------------------------------------------------------------------ state */
+var S = null;
+var tick = null;
+
+function save(){ if (S) store(SKEY, S); }
+
+/* ------------------------------------------------------------------ grading */
+function isAnswered(id){ return S.ans[id] !== undefined; }
+
+function gradeNum(q, raw){
+  var v = parseFloat(String(raw).replace(/[,$\s]/g, ''));
+  if (!isFinite(v)) return null;
+  var tol = Math.max(Math.abs(q.answer) * (q.tol || 0.02), 1e-9);
+  return { val: v, ok: Math.abs(v - q.answer) <= tol };
+}
+
+function score(){
+  var right = 0, answered = 0;
+  S.ids.forEach(function(id){
+    var a = S.ans[id];
+    if (a === undefined) return;
+    answered++;
+    if (a.ok) right++;
+  });
+  return { right: right, answered: answered, total: S.ids.length };
+}
+
+/* ------------------------------------------------------------------ timer */
+function fmtClock(sec){
+  sec = Math.max(0, Math.round(sec));
+  var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+}
+function startTimer(){
+  stopTimer();
+  tick = setInterval(function(){
+    if (!S || S.done || S.paused) return;
+    S.spent++;
+    paintTime();
+    if (S.spent % 10 === 0) save();
+  }, 1000);
+}
+function stopTimer(){ if (tick) { clearInterval(tick); tick = null; } }
+function paintTime(){
+  var left = S.limit - S.spent, el = $('pTime');
+  el.classList.remove('hide');
+  if (left >= 0){
+    el.textContent = 'Time left ' + fmtClock(left);
+    el.classList.toggle('alarm', left < 300);
+  } else {
+    el.textContent = 'Over by ' + fmtClock(-left);
+    el.classList.add('alarm');
+  }
+}
+
+/* ------------------------------------------------------------------ render: question */
+function cur(){ return BYID[S.ids[S.i]]; }
+
+function renderQ(){
+  var q = cur(), id = q.id, a = S.ans[id];
+  var reveal = a !== undefined && S.fb === 'instant';
+
+  $('qnum').textContent = 'Question ' + (S.i + 1) + ' of ' + S.ids.length;
+  $('qarea').textContent = q.area;
+  $('qtopic').textContent = q.topic;
+  $('qdiff').textContent = DIFFNAME[q.diff] || '';
+
+  var sp = $('qsec');
+  if (S.ord === 'grouped'){
+    var p = sectionPos();
+    sp.classList.remove('hide');
+    sp.textContent = 'Section ' + p.sec + ' of ' + p.secs + ' · ' + p.idx +
+                     ' of ' + p.of + ' in this area';
+  } else {
+    sp.classList.add('hide');
+  }
+  $('qprompt').textContent = q.prompt;
+  $('bFlag').textContent = S.flags[id] ? 'Unflag' : 'Flag for review';
+
+  var ch = $('qchoices'), nr = $('qnumrow');
+  ch.innerHTML = '';
+  if (q.kind === 'mc'){
+    nr.classList.add('hide');
+    ch.classList.remove('hide');
+    q.choices.forEach(function(opt, k){
+      var b = document.createElement('button');
+      b.className = 'ch';
+      var picked = a !== undefined && a.pick === k;
+      var correct = k === q.answer;
+      if (reveal){
+        b.disabled = true;
+        if (correct) b.classList.add('ok');
+        else if (picked) b.classList.add('no');
+        else b.classList.add('dim');
+      } else if (picked){
+        b.classList.add('sel');
+      }
+      var mark = '';
+      if (reveal && correct) mark = '<span class="mark" style="color:var(--good)">&#10003; Correct answer</span>';
+      else if (reveal && picked) mark = '<span class="mark" style="color:var(--bad)">&#10007; You chose this</span>';
+      b.innerHTML = '<span class="key">' + 'ABCDEFGH'[k] + '</span>' +
+                    '<span class="val">' + esc(opt.text) +
+                    (q.units ? ' <span class="unit">' + esc(q.units) + '</span>' : '') +
+                    '</span>' + mark;
+      b.onclick = function(){ answerMC(k); };
+      ch.appendChild(b);
+    });
+  } else {
+    ch.classList.add('hide');
+    nr.classList.remove('hide');
+    $('qunit').textContent = q.units || '';
+    var inp = $('qinput');
+    inp.value = a !== undefined && a.raw !== undefined ? a.raw : '';
+    inp.disabled = !!reveal;
+    $('bCheck').disabled = !!reveal;
+    $('bCheck').textContent = S.fb === 'instant' ? 'Check' : 'Save answer';
+  }
+
+  renderFB(reveal ? q : null);
+  paintHeader();
+  renderNav();
+  $('bPrev').disabled = S.i === 0;
+  $('bNext').disabled = S.i >= S.ids.length - 1;
+}
+
+function renderFB(q){
+  var fb = $('fb');
+  if (!q){ fb.className = 'fb hide'; fb.innerHTML = ''; return; }
+  var a = S.ans[q.id];
+  var h = '';
+  h += '<div class="vd" style="color:' + (a.ok ? 'var(--good)' : 'var(--bad)') + '">' +
+       (a.ok ? '&#10003; Correct' : '&#10007; Not correct') + '</div>';
+
+  if (q.kind === 'num'){
+    h += '<p style="margin:0 0 6px">The answer is <b>' + esc(fmtNum(q.answer)) + ' ' +
+         esc(q.units || '') + '</b>';
+    if (a.raw !== undefined && a.raw !== '') h += '. You entered <b>' + esc(a.raw) + '</b>';
+    h += '. Anything within ' + Math.round((q.tol || 0.02) * 100) + '% counts.</p>';
+  } else if (!a.ok && a.pick != null && q.choices[a.pick] && q.choices[a.pick].why){
+    h += '<h4>Why your option is wrong</h4><p class="why">' +
+         esc(q.choices[a.pick].why) + '</p>';
+  }
+
+  h += '<h4>Worked solution</h4><ol>' +
+       q.steps.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>';
+  h += '<h4>Formula</h4><pre>' + esc(q.formula) + '</pre>';
+  if (q.pitfall) h += '<h4>Watch out</h4><p class="pit">' + esc(q.pitfall) + '</p>';
+
+  fb.className = 'fb ' + (a.ok ? 'ok' : 'no');
+  fb.innerHTML = h;
+}
+
+function fmtNum(x){
+  if (!isFinite(x)) return String(x);
+  var a = Math.abs(x);
+  var nd = a >= 1000 ? 0 : a >= 100 ? 1 : a >= 10 ? 2 : a >= 1 ? 3 : 5;
+  var s = x.toFixed(nd);
+  if (s.indexOf('.') > -1) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  return Number(s).toLocaleString(undefined, {maximumFractionDigits: 6});
+}
+
+function paintHeader(){
+  var sc = score();
+  $('pProg').classList.remove('hide');
+  $('pProg').innerHTML = 'Answered <b>' + sc.answered + '</b> / ' + sc.total;
+  var ps = $('pScore');
+  if (S.fb === 'instant'){
+    ps.classList.remove('hide');
+    ps.innerHTML = 'Score <b>' + sc.right + '</b> / ' + sc.answered +
+      (sc.answered ? ' &middot; ' + Math.round(sc.right / sc.answered * 100) + '%' : '');
+  } else {
+    ps.classList.add('hide');
+  }
+  $('topbar').classList.remove('hide');
+  $('topbar').firstChild.style.width = (sc.answered / sc.total * 100) + '%';
+  $('bPause').classList.remove('hide');
+  $('bPause').textContent = S.paused ? 'Resume' : 'Pause';
+  paintTime();
+}
+
+function renderNav(){
+  var g = $('navgrid');
+  g.innerHTML = '';
+  S.ids.forEach(function(id, k){
+    var b = document.createElement('button');
+    var a = S.ans[id];
+    var cls = 'nb';
+    if (a !== undefined) cls += S.fb === 'instant' ? (a.ok ? ' ok' : ' no') : ' ans';
+    if (S.flags[id]) cls += ' flag';
+    if (k === S.i) cls += ' cur';
+    b.className = cls;
+    b.textContent = k + 1;
+    b.title = BYID[id].area + (S.flags[id] ? ' (flagged)' : '');
+    b.onclick = function(){ S.i = k; save(); renderQ(); scrollTop(); };
+    g.appendChild(b);
+  });
+  $('navLegend').innerHTML = S.fb === 'instant'
+    ? 'green = right, red = wrong, dot = flagged'
+    : 'blue = answered, dot = flagged';
+}
+
+function scrollTop(){ window.scrollTo({top: 0, behavior: 'smooth'}); }
+
+/* ------------------------------------------------------------------ answering */
+function answerMC(k){
+  var q = cur();
+  if (S.ans[q.id] !== undefined && S.fb === 'instant') return;  // locked once revealed
+  S.ans[q.id] = { pick: k, ok: k === q.answer };
+  save();
+  renderQ();
+}
+
+function answerNum(){
+  var q = cur(), raw = $('qinput').value.trim();
+  if (raw === '') return;
+  var g = gradeNum(q, raw);
+  if (!g){
+    $('qinput').focus();
+    $('qinput').select();
+    return;
+  }
+  S.ans[q.id] = { raw: raw, val: g.val, ok: g.ok };
+  save();
+  renderQ();
+  if (S.fb !== 'instant') next();
+}
+
+function next(){
+  if (S.i < S.ids.length - 1){ S.i++; save(); renderQ(); scrollTop(); }
+  else { $('bFinish').focus(); }
+}
+function prev(){ if (S.i > 0){ S.i--; save(); renderQ(); scrollTop(); } }
+
+/* ------------------------------------------------------------------ results */
+function renderResults(){
+  var sc = score();
+  var pct = sc.total ? sc.right / sc.total * 100 : 0;
+
+  var per = {};
+  S.ids.forEach(function(id){
+    var q = BYID[id], p = per[q.area] || (per[q.area] = {n: 0, r: 0, miss: []});
+    p.n++;
+    var a = S.ans[id];
+    if (a && a.ok) p.r++; else p.miss.push(id);
+  });
+  var rows = Object.keys(per).map(function(k){
+    return {area: k, n: per[k].n, r: per[k].r, pct: per[k].r / per[k].n * 100};
+  }).sort(function(x, y){ return x.pct - y.pct || y.n - x.n; });
+
+  var band = pct >= 70 ? ['v-good', '&#10003;', 'At or above the 70% study benchmark']
+           : pct >= 55 ? ['v-warn', '&#9888;', 'Below the 70% study benchmark']
+           : ['v-bad', '&#9888;', 'Well below the 70% study benchmark'];
+
+  var missed = S.ids.filter(function(id){ var a = S.ans[id]; return !a || !a.ok; });
+  var blank  = S.ids.filter(function(id){ return S.ans[id] === undefined; });
+
+  var h = '';
+  h += '<h1>Your results</h1>';
+  h += '<div class="card"><div class="score">' +
+       '<div><div class="big">' + sc.right + '<span class="of"> / ' + sc.total +
+       '</span></div><div class="muted small">' + Math.round(pct) + '% correct &middot; ' +
+       esc(S.label) + ' &middot; ' + fmtClock(S.spent) + ' spent</div></div>' +
+       '<div><span class="verdict ' + band[0] + '">' + band[1] + ' ' + band[2] +
+       '</span></div></div>';
+  if (blank.length) h += '<p class="small muted" style="margin:14px 0 0">' +
+       blank.length + ' question' + (blank.length === 1 ? '' : 's') +
+       ' left blank, counted as incorrect.</p>';
+  h += '<p class="small muted" style="margin:14px 0 0">NCEES does not publish a fixed ' +
+       'passing percentage. The real cut score is set by a criterion-referenced ' +
+       'process and reported only as pass or fail, so treat 70% here as a study ' +
+       'benchmark rather than an official threshold.</p>';
+  h += '</div>';
+
+  /* Area table: ONE hue, sorted weakest first, with the number printed beside every bar
+     so the ranking never depends on reading a color. */
+  h += '<div class="card"><h3>By knowledge area &mdash; weakest first</h3>' +
+       '<table><thead><tr><th>Area</th><th>Score</th><th></th><th class="barcell"></th>' +
+       '<th>Status</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var b = bandOf(r.pct);
+    h += '<tr><td>' + esc(r.area) + '</td>' +
+         '<td class="sc-' + b.cls + '">' + r.r + '/' + r.n + '</td>' +
+         '<td class="sc-' + b.cls + '">' + Math.round(r.pct) + '%</td>' +
+         '<td class="barcell"><span class="abar"><i class="' + b.cls +
+         '" style="width:' + r.pct + '%"></i></span></td>' +
+         '<td><span class="band b-' + b.cls + '">' + b.mark + ' ' + b.word +
+         '</span></td></tr>';
+  });
+  h += '</tbody></table>' +
+       '<p class="muted small" style="margin:12px 0 0">Red is under 55%, amber is 55 ' +
+       'to 79%, green is 80% or better. Work from the top of this list down &mdash; an ' +
+       'area worth 15 questions on the real exam repays study far more than one worth ' +
+       '4.</p></div>';
+
+  if (missed.length){
+    h += '<div class="card"><h3>Review &mdash; ' + missed.length + ' to revisit</h3>';
+    missed.forEach(function(id){
+      var q = BYID[id], a = S.ans[id];
+      var yours = !a ? 'left blank'
+        : q.kind === 'num' ? 'you entered ' + esc(a.raw)
+        : 'you chose ' + 'ABCDEFGH'[a.pick] + ') ' + esc(q.choices[a.pick].text);
+      var right = q.kind === 'num' ? fmtNum(q.answer) + ' ' + (q.units || '')
+        : 'ABCDEFGH'[q.answer] + ') ' + q.choices[q.answer].text;
+      h += '<details class="miss"><summary><span><b>' + esc(q.area) + '</b> &mdash; ' +
+           esc(q.prompt.slice(0, 110)) + (q.prompt.length > 110 ? '&hellip;' : '') +
+           '<br><span class="muted small">' + yours + ' &middot; correct answer ' +
+           esc(right) + '</span></span></summary><div class="body">' +
+           '<p>' + esc(q.prompt) + '</p>' +
+           (!a || q.kind === 'num' || a.ok || !q.choices[a.pick].why ? '' :
+             '<p class="why">' + esc(q.choices[a.pick].why) + '</p>') +
+           '<h4 style="font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;' +
+           'color:var(--ink-3);margin:12px 0 6px">Worked solution</h4><ol>' +
+           q.steps.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') +
+           '</ol><pre>' + esc(q.formula) + '</pre>' +
+           (q.pitfall ? '<p class="pit">' + esc(q.pitfall) + '</p>' : '') +
+           '</div></details>';
+    });
+    h += '</div>';
+  } else {
+    h += '<div class="card"><h3>Review</h3><p>Nothing missed. Take a longer set or ' +
+         'switch to hold-answers-until-the-end mode for exam conditions.</p></div>';
+  }
+
+  var hist = load(HKEY) || [];
+  if (hist.length > 1){
+    h += '<div class="card noprint"><h3>Your attempts</h3><table><thead><tr>' +
+         '<th>When</th><th>Set</th><th>Score</th><th>%</th></tr></thead><tbody>';
+    hist.slice(-12).reverse().forEach(function(x){
+      h += '<tr><td>' + new Date(x.at).toLocaleString() + '</td><td>' + esc(x.label) +
+           '</td><td>' + x.right + '/' + x.total + '</td><td>' +
+           Math.round(x.right / x.total * 100) + '%</td></tr>';
+    });
+    h += '</tbody></table></div>';
+  }
+
+  h += '<div class="row noprint"><button class="primary" id="bAgain">New exam</button>' +
+       '<button id="bPrint">Print or save as PDF</button></div>';
+
+  var sec = $('results');
+  sec.innerHTML = h;
+  $('bAgain').onclick = function(){ store(SKEY, null); S = null; showStart(); };
+  $('bPrint').onclick = function(){ window.print(); };
+}
+
+function finish(){
+  var blank = S.ids.filter(function(id){ return S.ans[id] === undefined; }).length;
+  if (blank && !confirm(blank + ' question' + (blank === 1 ? ' is' : 's are') +
+      ' still blank and will be scored as incorrect. Finish now?')) return;
+  S.done = true;
+  S.paused = true;
+  stopTimer();
+  var sc = score();
+  // Per-area tallies travel with the attempt so the start screen can show which areas
+  // need work the next time she opens the page.
+  var byArea = {};
+  S.ids.forEach(function(id){
+    var a = BYID[id].area, t = byArea[a] || (byArea[a] = [0, 0]);
+    t[1]++;
+    if (S.ans[id] && S.ans[id].ok) t[0]++;
+  });
+  var hist = load(HKEY) || [];
+  hist.push({at: Date.now(), label: S.label, right: sc.right, total: sc.total,
+             secs: S.spent, areas: byArea});
+  store(HKEY, hist.slice(-50));
+  store(SKEY, null);
+  $('exam').classList.add('hide');
+  $('start').classList.add('hide');
+  $('results').classList.remove('hide');
+  ['pScore','pProg','pTime','bPause'].forEach(function(i){ $(i).classList.add('hide'); });
+  $('topbar').classList.add('hide');
+  renderResults();
+  scrollTop();
+}
+
+/* ------------------------------------------------------------------ screens */
+function showStart(){
+  $('exam').classList.add('hide');
+  $('results').classList.add('hide');
+  $('scrim').classList.add('hide');
+  $('start').classList.remove('hide');
+  ['pScore','pProg','pTime','bPause'].forEach(function(i){ $(i).classList.add('hide'); });
+  $('topbar').classList.add('hide');
+  stopTimer();
+  paintSpec(null);
+  var saved = load(SKEY);
+  var ok = saved && !saved.done && saved.ids && saved.ids.length;
+  $('resumeCard').style.display = ok ? '' : 'none';
+  if (ok){
+    var done = Object.keys(saved.ans || {}).length;
+    $('resumeTxt').textContent = saved.label + ', ' + done + ' of ' +
+      saved.ids.length + ' answered, ' + fmtClock(saved.limit - saved.spent) +
+      ' remaining. Started ' + new Date(saved.started).toLocaleString() + '.';
+  }
+}
+
+function showExam(){
+  $('start').classList.add('hide');
+  $('results').classList.add('hide');
+  $('exam').classList.remove('hide');
+  renderQ();
+  startTimer();
+}
+
+/* Three performance bands, used identically on the results table and on the start
+   screen's spec table so a weak area looks the same wherever it appears. */
+function bandOf(pct){
+  return pct >= 80 ? {cls: 'hi',  mark: '✓', word: 'Strong'}
+       : pct >= 55 ? {cls: 'mid', mark: '→', word: 'Review'}
+                   : {cls: 'lo',  mark: '⚠', word: 'Needs work'};
+}
+
+/* Good-luck gate. The exam is built and saved, but the clock is held until she is
+   ready - opening the page should never silently start burning exam time. */
+function openGoodLuck(){
+  var mins = Math.round(S.limit / 60);
+  $('glSub').textContent = S.ids.length + ' questions · ' + mins + ' minutes';
+  var fbTxt = S.fb === 'instant'
+    ? 'Answers and full solutions appear as soon as you choose.'
+    : 'Answers are held back until you press Finish.';
+  var ordTxt = S.ord === 'grouped'
+    ? 'Questions are grouped by knowledge area, in specification order.'
+    : 'Questions are shuffled across all areas.';
+  $('glList').innerHTML =
+    '<li>' + esc(fbTxt) + '</li>' +
+    '<li>' + esc(ordTxt) + '</li>' +
+    '<li>Flag anything you want to come back to, then use the navigator.</li>' +
+    '<li>You can pause the clock at any time, and your progress is saved if you ' +
+       'close the page.</li>';
+  $('scrim').classList.remove('hide');
+  $('bBegin').focus();
+}
+function closeGoodLuck(){
+  $('scrim').classList.add('hide');
+  showExam();
+}
+
+/* The third column does double duty. Before any attempt it shows how many questions
+   this exam will draw from each area. Once there is a finished attempt it shows that
+   attempt's score per area, banded red / amber / green, so the specification table
+   itself becomes the study plan. */
+function paintSpec(counts){
+  var tb = $('specTable').querySelector('tbody');
+  var last = null;
+  if (!counts){
+    var hist = load(HKEY) || [];
+    for (var k = hist.length - 1; k >= 0; k--){
+      if (hist[k].areas){ last = hist[k]; break; }
+    }
+  }
+  tb.innerHTML = '';
+  var lo = 0, hi = 0, mine = 0, gr = 0, gn = 0;
+  AREAS.forEach(function(a){
+    lo += a.low; hi += a.high;
+    var cell, cls = '';
+    if (counts){
+      var c = counts[a.name] || 0;
+      mine += c;
+      cell = String(c);
+    } else if (last){
+      var t = last.areas[a.name];
+      if (t && t[1]){
+        var pct = t[0] / t[1] * 100, b = bandOf(pct);
+        gr += t[0]; gn += t[1];
+        cls = ' class="sc-' + b.cls + '"';
+        cell = t[0] + '/' + t[1] + ' &nbsp;<span class="band b-' + b.cls + '">' +
+               b.mark + ' ' + b.word + '</span>';
+      } else {
+        cell = '<span class="muted">not tested</span>';
+      }
+    } else {
+      cell = '&mdash;';
+    }
+    tb.innerHTML += '<tr><td>' + esc(a.name) + '</td><td>' + a.low + '&ndash;' +
+      a.high + '</td><td' + cls + '>' + cell + '</td></tr>';
+  });
+  $('specReal').innerHTML = lo + '&ndash;' + hi;
+  $('specMine').innerHTML = counts ? String(mine)
+    : last ? (gr + '/' + gn) : '&mdash;';
+  $('specHead').innerHTML = counts ? 'On your exam'
+    : last ? 'Your last attempt' : 'On your exam';
+  $('specNote').innerHTML = last && !counts
+    ? 'Your last attempt (' + new Date(last.at).toLocaleDateString() + ') scored per ' +
+      'area above: red is under 55%, amber 55 to 79%, green 80% or better. Question ' +
+      'counts follow the NCEES FE Civil CBT exam specification effective July 2020.'
+    : 'Question counts follow the NCEES FE Civil CBT exam specification effective ' +
+      'July 2020. The questions themselves are original, written for this trainer.';
+  $('bankInfo').textContent = BANK.meta.count + ' questions in the bank, so each ' +
+    'exam draws a different mix.';
+}
+
+/* ------------------------------------------------------------------ wiring */
+AREAS.forEach(function(a){
+  var have = QS.filter(function(q){ return q.area === a.name; }).length;
+  var o = document.createElement('option');
+  o.value = a.name;
+  o.textContent = a.name + ' (' + have + ')';
+  $('areaSel').appendChild(o);
+});
+$('areaSel').onclick = function(e){ e.stopPropagation(); };
+$('areaSel').onchange = function(){
+  document.querySelector('input[name=len][value=area]').checked = true;
+};
+
+$('bStart').onclick = function(){
+  // Starting a new exam overwrites the saved one. Never do that silently - an
+  // in-progress 110-question attempt is hours of work.
+  var prior = load(SKEY);
+  if (prior && !prior.done && prior.ids && prior.ids.length &&
+      Object.keys(prior.ans || {}).length){
+    if (!confirm('You have an unfinished exam with ' +
+        Object.keys(prior.ans).length + ' of ' + prior.ids.length +
+        ' answered. Starting a new one will discard it.\n\nStart a new exam anyway?')){
+      return;
+    }
+  }
+  var len = document.querySelector('input[name=len]:checked').value;
+  var fb  = document.querySelector('input[name=fb]:checked').value;
+  var ord = document.querySelector('input[name=ord]:checked').value;
+  S = buildExam(len, $('areaSel').value, fb, ord);
+  if (!S.ids.length){ alert('No questions available for that selection.'); return; }
+  var counts = {};
+  S.ids.forEach(function(id){ counts[BYID[id].area] = (counts[BYID[id].area] || 0) + 1; });
+  paintSpec(counts);
+  save();
+  openGoodLuck();
+};
+$('bBegin').onclick = closeGoodLuck;
+$('bResume').onclick = function(){
+  S = load(SKEY);
+  if (!S){ showStart(); return; }
+  S.paused = false;
+  if (S.ord === undefined) S.ord = 'mixed';   // exam saved before ordering existed
+  showExam();
+};
+$('bDiscard').onclick = function(){
+  if (confirm('Discard the unfinished exam? This cannot be undone.')){
+    store(SKEY, null);
+    showStart();
+  }
+};
+
+$('bNext').onclick = next;
+$('bPrev').onclick = prev;
+$('bCheck').onclick = answerNum;
+$('qinput').onkeydown = function(e){ if (e.key === 'Enter'){ e.preventDefault(); answerNum(); } };
+$('bFlag').onclick = function(){
+  var id = cur().id;
+  if (S.flags[id]) delete S.flags[id]; else S.flags[id] = 1;
+  save();
+  renderQ();
+};
+$('bFinish').onclick = finish;
+$('bPause').onclick = function(){
+  S.paused = !S.paused;
+  paintHeader();
+  save();
+};
+
+document.addEventListener('keydown', function(e){
+  if (!S || S.done || $('exam').classList.contains('hide')) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  var q = cur();
+  if (/^[1-8]$/.test(e.key) && q.kind === 'mc'){
+    var k = parseInt(e.key, 10) - 1;
+    if (k < q.choices.length){ e.preventDefault(); answerMC(k); }
+  } else if (/^[a-hA-H]$/.test(e.key) && q.kind === 'mc' && e.key.toLowerCase() !== 'f'){
+    var j = 'abcdefgh'.indexOf(e.key.toLowerCase());
+    if (j > -1 && j < q.choices.length){ e.preventDefault(); answerMC(j); }
+  } else if (e.key === 'Enter' || e.key === 'ArrowRight'){
+    e.preventDefault(); next();
+  } else if (e.key === 'ArrowLeft'){
+    e.preventDefault(); prev();
+  } else if (e.key.toLowerCase() === 'f'){
+    e.preventDefault(); $('bFlag').click();
+  }
+});
+
+window.addEventListener('beforeunload', function(e){
+  if (S && !S.done && Object.keys(S.ans).length){ save(); e.preventDefault(); e.returnValue = ''; }
+});
+
+showStart();
+})();
+</script>
+</body>
+</html>
