@@ -53,7 +53,28 @@ GitHub Pages and send the link.
   Closing the tab stops it; a refresh can only ever hand back up to 10 seconds. Storage
   is per browser and per file location, so a private window or moving the folder starts
   fresh.
-- Attempt history is kept; results print to PDF.
+- **Saving results to share.** On finishing, the Save-as-PDF dialog opens on its own;
+  a "Save a copy to share" card and a "Download a copy" button are there if it is
+  dismissed. The download is a standalone HTML file with every worked solution expanded.
+  The print stylesheet forces the light palette even in dark mode &mdash; browsers drop
+  background colours when printing, so a dark theme would otherwise produce a
+  white-on-white page.
+- **Results survive the tab closing.** The finished attempt is persisted in full, so
+  "Open my last results" on the front page restores the score, the area breakdown, and
+  every missed question with its solution.
+- Attempt history is kept across sittings.
+
+## Privacy
+
+There is no backend. The app makes no network requests of any kind &mdash; no `fetch`,
+no analytics, no external resources beyond its own `bank.js`. Every answer, score, and
+timer value lives in three `localStorage` keys in the browser that took the exam.
+
+This means progress is **per browser profile**, not per person and not per IP: the same
+person on two devices has two separate sets, and two people sharing one browser profile
+would share one. Nobody can see anyone else's results, including whoever published the
+site. The only way to share results is for the examinee to send the PDF or the
+downloaded copy.
 - Also offers a 30-question short set and single-area drills.
 
 Keyboard: `1`–`4` or `A`–`D` to choose, `Enter` next, arrows to move, `f` to flag.
