@@ -222,9 +222,30 @@
   .miss .body{padding:0 14px 14px}
   .hide{display:none !important}
   @media print{
+    /* Force the light set even if she is browsing in dark mode. Browsers drop
+       background colours when printing, so a dark theme would put white ink on a
+       white page - the PDF would come out blank. The duplicate selector outranks
+       html[data-theme="dark"]. */
+    html, html[data-theme="dark"]{
+      --surface:#fff; --plane:#fff; --raised:#fff;
+      --ink:#000; --ink-2:#1f1f1f; --ink-3:#4a4a4a;
+      --rule:#c9c9c9; --rule-2:#a8a8a8;
+      --accent:#13508f; --good:#0a6b49; --warn:#8f3a12; --bad:#8d1f1f;
+      --accent-soft:#fff; --good-soft:#fff; --warn-soft:#fff; --bad-soft:#fff;
+      --shadow:none;
+    }
     header,.noprint{display:none !important}
-    body{background:#fff}
-    .card{box-shadow:none;break-inside:avoid}
+    body{background:#fff;color:#000}
+    .wrap{max-width:none;padding:0}
+    .card{box-shadow:none;break-inside:avoid;border-color:#c9c9c9}
+    .miss{break-inside:avoid}
+    /* Print every missed question in full rather than as a collapsed summary. */
+    details > .body{display:block !important}
+    .miss > summary::before{content:"" !important}
+    .band{border-width:1.5px}
+    .abar{border:1px solid #c9c9c9}
+    .abar > i{background:#444 !important}
+    a{color:#000;text-decoration:none}
   }
   @media (max-width:560px){
     .score .big{font-size:40px}
@@ -262,6 +283,16 @@
       <div class="row">
         <button class="primary" id="bResume">Resume exam</button>
         <button id="bDiscard">Discard and start over</button>
+      </div>
+    </div>
+
+    <div class="card" id="lastCard" style="display:none">
+      <h3>Your last results</h3>
+      <p id="lastTxt" class="small"></p>
+      <div class="row">
+        <button class="primary" id="bLast">Open my last results</button>
+        <span class="muted small">Full score, area breakdown, and every missed
+          question with its solution. You can save a PDF from there.</span>
       </div>
     </div>
 
@@ -455,6 +486,7 @@ QS.forEach(function(q){ BYID[q.id] = q; });
 var SKEY = 'feCivil.exam.v1';
 var HKEY = 'feCivil.history.v1';
 var TKEY = 'feCivil.theme.v1';
+var RKEY = 'feCivil.lastResults.v1';   // full detail of the last finished attempt
 var DIFFNAME = {1:'Straightforward', 2:'Moderate', 3:'Challenging'};
 
 var $ = function(id){ return document.getElementById(id); };
@@ -893,11 +925,20 @@ function renderResults(){
   if (blank.length) h += '<p class="small muted" style="margin:14px 0 0">' +
        blank.length + ' question' + (blank.length === 1 ? '' : 's') +
        ' left blank, counted as incorrect.</p>';
-  h += '<p class="small muted" style="margin:14px 0 0">NCEES does not publish a fixed ' +
+  h += '<p class="small muted" style="margin:14px 0 0" id="benchNote">NCEES does not publish a fixed ' +
        'passing percentage. The real cut score is set by a criterion-referenced ' +
        'process and reported only as pass or fail, so treat 70% here as a study ' +
        'benchmark rather than an official threshold.</p>';
   h += '</div>';
+
+  h += '<div class="card noprint" style="border-color:var(--accent)">' +
+       '<h3 style="color:var(--accent)">Save a copy to share</h3>' +
+       '<p class="small" style="margin-bottom:12px">The Save-as-PDF dialog opens on its ' +
+       'own in a moment &mdash; choose <b>Save as PDF</b> as the destination. If you ' +
+       'close it, either button below still works, and you can reopen these results ' +
+       'any time from the front page.</p>' +
+       '<div class="row"><button class="primary" id="bPrintTop">Save as PDF</button>' +
+       '<button id="bDlTop">Download a copy</button></div></div>';
 
   /* Area table: ONE hue, sorted weakest first, with the number printed beside every bar
      so the ranking never depends on reading a color. */
@@ -962,12 +1003,70 @@ function renderResults(){
   }
 
   h += '<div class="row noprint"><button class="primary" id="bAgain">New exam</button>' +
-       '<button id="bPrint">Print or save as PDF</button></div>';
+       '<button id="bPrint">Save as PDF</button>' +
+       '<button id="bDl">Download a copy</button></div>';
 
   var sec = $('results');
   sec.innerHTML = h;
   $('bAgain').onclick = function(){ store(SKEY, null); S = null; showStart(); };
   $('bPrint').onclick = function(){ window.print(); };
+  $('bDl').onclick = downloadResults;
+  if ($('bPrintTop')) $('bPrintTop').onclick = function(){ window.print(); };
+  if ($('bDlTop')) $('bDlTop').onclick = downloadResults;
+}
+
+function dateStamp(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
+         String(d.getDate()).padStart(2, '0');
+}
+
+/* A standalone file she can attach to a message. This is the fallback that matters:
+   if she cancels the print dialog, there is still a real file to send, and unlike a
+   PDF it keeps every worked solution expanded and searchable. */
+function downloadResults(){
+  var clone = $('results').cloneNode(true);
+  Array.prototype.forEach.call(clone.querySelectorAll('.noprint'), function(n){
+    n.parentNode.removeChild(n);
+  });
+  Array.prototype.forEach.call(clone.querySelectorAll('details'), function(d){
+    d.setAttribute('open', '');
+  });
+  var css = document.querySelector('style').textContent;
+  // data-theme="light" so the shared copy is readable regardless of her own setting.
+  var html = '<!DOCTYPE html><html lang="en" data-theme="light"><head>' +
+    '<meta charset="utf-8"><meta name="viewport" content="width=device-width,' +
+    'initial-scale=1"><title>FE Civil results ' + dateStamp() + '</title>' +
+    '<style>' + css + '</style></head><body><div class="wrap">' +
+    clone.innerHTML + '</div></body></html>';
+  var url = URL.createObjectURL(new Blob([html], {type: 'text/html;charset=utf-8'}));
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'FE-Civil-results-' + dateStamp() + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+}
+
+/* Re-open the last finished attempt in full. Without this, closing the results tab
+   loses every worked solution for the questions she missed. */
+function openLastResults(){
+  var r = load(RKEY);
+  if (!r || !r.ids) return;
+  S = {ids: r.ids, ans: r.ans, label: r.label, spent: r.spent || 0,
+       fb: r.fb || 'instant', ord: r.ord || 'mixed', limit: r.limit || 0,
+       i: 0, flags: {}, done: true, paused: true, started: r.at};
+  $('start').classList.add('hide');
+  $('exam').classList.add('hide');
+  $('scrim').classList.add('hide');
+  $('results').classList.remove('hide');
+  ['pScore', 'pProg', 'pTime', 'bPause'].forEach(function(i){
+    $(i).classList.add('hide');
+  });
+  $('topbar').classList.add('hide');
+  renderResults();
+  scrollTop();
 }
 
 function finish(){
@@ -990,6 +1089,9 @@ function finish(){
   hist.push({at: Date.now(), label: S.label, right: sc.right, total: sc.total,
              secs: S.spent, areas: byArea});
   store(HKEY, hist.slice(-50));
+  // Keep the full attempt so the results page can be reopened after the tab closes.
+  store(RKEY, {at: Date.now(), ids: S.ids, ans: S.ans, label: S.label,
+               spent: S.spent, fb: S.fb, ord: S.ord, limit: S.limit});
   store(SKEY, null);
   $('exam').classList.add('hide');
   $('start').classList.add('hide');
@@ -998,6 +1100,11 @@ function finish(){
   $('topbar').classList.add('hide');
   renderResults();
   scrollTop();
+  // Open the Save-as-PDF dialog without her having to find a button. Delayed so the
+  // results have painted first, and only on a genuine finish - never on a reopen.
+  setTimeout(function(){
+    try { window.print(); } catch (e) { /* blocked: both buttons still work */ }
+  }, 1200);
 }
 
 /* ------------------------------------------------------------------ screens */
@@ -1010,6 +1117,18 @@ function showStart(){
   $('topbar').classList.add('hide');
   stopTimer();
   paintSpec(null);
+  var lastR = load(RKEY);
+  $('lastCard').style.display = lastR && lastR.ids ? '' : 'none';
+  if (lastR && lastR.ids){
+    var r = 0;
+    lastR.ids.forEach(function(id){
+      if (lastR.ans[id] && lastR.ans[id].ok) r++;
+    });
+    $('lastTxt').textContent = lastR.label + ': scored ' + r + ' of ' +
+      lastR.ids.length + ' (' + Math.round(r / lastR.ids.length * 100) + '%) on ' +
+      new Date(lastR.at).toLocaleString() + '.';
+  }
+
   var saved = load(SKEY);
   var ok = saved && !saved.done && saved.ids && saved.ids.length;
   $('resumeCard').style.display = ok ? '' : 'none';
@@ -1153,6 +1272,7 @@ $('bStart').onclick = function(){
   openGoodLuck();
 };
 $('bBegin').onclick = closeGoodLuck;
+$('bLast').onclick = openLastResults;
 $('bResume').onclick = function(){
   S = load(SKEY);
   if (!S){ showStart(); return; }
