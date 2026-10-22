@@ -110,8 +110,8 @@ mc("MATH-06", M, "Statistics",
             (ss / (n - 1), "That is the sample VARIANCE. Take the square root."),
             (mean, "That is the mean, not the standard deviation.")],
    diff=2,
-   formula="s = sqrt( sum(xi - xbar)^2 / (n - 1) )   [sample]\n"
-           "sigma = sqrt( sum(xi - mu)^2 / n )        [population]",
+   formula="s = sqrt( sum(x_i - xbar)^2 / (n - 1) )   [sample]\n"
+           "sigma = sqrt( sum(x_i - mu)^2 / n )        [population]",
    steps=["xbar = 90 / 5 = {}".format(fmt(mean)),
           "Deviations: -6, -3, 0, 2, 7 -> squares 36, 9, 0, 4, 49, sum = {}".format(
               fmt(ss)),

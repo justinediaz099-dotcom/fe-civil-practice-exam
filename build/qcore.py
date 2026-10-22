@@ -11,6 +11,8 @@ instead of just "incorrect". Random plausible numbers teach nothing.
 import json
 import math
 
+import mathfmt
+
 AREAS = [
     # (name, short, exam-blueprint low, high) - from FE-Civil-CBT-specs-1.pdf
     ("Mathematics and Statistics", "Math", 8, 12),
@@ -140,6 +142,11 @@ def dump(path):
     )
     missing = [a["name"] for a in meta["areas"] if a["have"] == 0]
     assert not missing, "areas with no questions: {}".format(missing)
+
+    # Math typography is applied once, here, so the Python sources stay greppable ASCII
+    # while the shipped bank carries real symbols (x̄, √, ², π, σ).
+    for q in _BANK:
+        mathfmt.prettify_question(q)
 
     payload = dict(meta=meta, questions=_BANK)
     with open(path, "w", encoding="utf-8") as fh:
