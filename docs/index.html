@@ -220,6 +220,16 @@
   .miss > summary::before{content:"\25B8";color:var(--ink-3);flex:none;margin-top:1px}
   .miss[open] > summary::before{content:"\25BE"}
   .miss .body{padding:0 14px 14px}
+  /* Right/wrong glyph on every question in the full list. A glyph as well as a colour,
+     so the two still read apart in grayscale or with colour-vision deficiency. */
+  .qmark{flex:none;font-weight:700;margin-right:3px}
+  .qmark.good{color:var(--good)}
+  .qmark.bad{color:var(--bad)}
+  /* A whole history row is the click target, not just its button - that is what she
+     reached for first. The button stays because a row that only responds to a click
+     somewhere in its middle is not discoverable. */
+  tr.openable{cursor:pointer}
+  tr.openable:hover{background:var(--surface)}
   .hide{display:none !important}
   @media print{
     /* Force the light set even if she is browsing in dark mode. Browsers drop
@@ -893,6 +903,36 @@ function next(){
 function prev(){ if (S.i > 0){ S.i--; save(); renderQ(); scrollTop(); } }
 
 /* ------------------------------------------------------------------ results */
+
+/* One question as a collapsible block: her answer, the correct answer, the named
+   mistake behind the option she picked, the worked solution, the formula and the
+   pitfall. Shared by the "to revisit" list and the every-question list so the two can
+   never drift apart, and used identically when reopening an old exam. */
+function qDetail(id){
+  var q = BYID[id], a = S.ans[id];
+  var ok = !!(a && a.ok);
+  var yours = !a ? 'left blank'
+    : q.kind === 'num' ? 'you entered ' + esc(a.raw)
+    : 'you chose ' + 'ABCDEFGH'[a.pick] + ') ' + esc(q.choices[a.pick].text);
+  var right = q.kind === 'num' ? fmtNum(q.answer) + ' ' + (q.units || '')
+    : 'ABCDEFGH'[q.answer] + ') ' + q.choices[q.answer].text;
+  return '<details class="miss"><summary><span>' +
+    '<span class="qmark ' + (ok ? 'good">&#10003;' : 'bad">&#10007;') + '</span> ' +
+    '<b>' + esc(q.area) + '</b> &mdash; ' +
+    esc(q.prompt.slice(0, 110)) + (q.prompt.length > 110 ? '&hellip;' : '') +
+    '<br><span class="muted small">' + yours + ' &middot; correct answer ' +
+    esc(right) + '</span></span></summary><div class="body">' +
+    '<p>' + esc(q.prompt) + '</p>' +
+    (!a || a.ok || q.kind === 'num' || !q.choices[a.pick] || !q.choices[a.pick].why ? '' :
+      '<p class="why">' + esc(q.choices[a.pick].why) + '</p>') +
+    '<h4 style="font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;' +
+    'color:var(--ink-3);margin:12px 0 6px">Worked solution</h4><ol>' +
+    q.steps.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') +
+    '</ol><pre>' + esc(q.formula) + '</pre>' +
+    (q.pitfall ? '<p class="pit">' + esc(q.pitfall) + '</p>' : '') +
+    '</div></details>';
+}
+
 function renderResults(){
   var sc = score();
   var pct = sc.total ? sc.right / sc.total * 100 : 0;
@@ -916,7 +956,17 @@ function renderResults(){
   var blank  = S.ids.filter(function(id){ return S.ans[id] === undefined; });
 
   var h = '';
-  h += '<h1>Your results</h1>';
+  if (S.review){
+    // Reopened from Past exams. Say so, and date it, so a saved copy or a screenshot of
+    // an old attempt can never be mistaken for the one she just sat.
+    h += '<div class="row noprint" style="margin:18px 0 0">' +
+         '<button id="bHistTop2">&larr; Past exams</button></div>';
+    h += '<h1 style="margin-bottom:4px">Past exam</h1>' +
+         '<p class="muted small" style="margin:0 0 16px">Taken ' +
+         new Date(S.started).toLocaleString() + '</p>';
+  } else {
+    h += '<h1>Your results</h1>';
+  }
   h += '<div class="card"><div class="score">' +
        '<div><div class="big">' + sc.right + '<span class="of"> / ' + sc.total +
        '</span></div><div class="muted small">' + Math.round(pct) + '% correct &middot; ' +
@@ -932,9 +982,11 @@ function renderResults(){
        'benchmark rather than an official threshold.</p>';
   h += '</div>';
 
-  h += '<p class="small muted noprint" style="margin:0 0 16px">These results are saved. ' +
-       'You can reopen this exam, and every earlier one, from <b>Past exams</b> on the ' +
-       'front page &mdash; nothing needs downloading.</p>';
+  if (!S.review){
+    h += '<p class="small muted noprint" style="margin:0 0 16px">These results are saved. ' +
+         'You can reopen this exam, and every earlier one, from <b>Past exams</b> on the ' +
+         'front page &mdash; nothing needs downloading.</p>';
+  }
 
   /* Area table: ONE hue, sorted weakest first, with the number printed beside every bar
      so the ranking never depends on reading a color. */
@@ -959,44 +1011,40 @@ function renderResults(){
 
   if (missed.length){
     h += '<div class="card"><h3>Review &mdash; ' + missed.length + ' to revisit</h3>';
-    missed.forEach(function(id){
-      var q = BYID[id], a = S.ans[id];
-      var yours = !a ? 'left blank'
-        : q.kind === 'num' ? 'you entered ' + esc(a.raw)
-        : 'you chose ' + 'ABCDEFGH'[a.pick] + ') ' + esc(q.choices[a.pick].text);
-      var right = q.kind === 'num' ? fmtNum(q.answer) + ' ' + (q.units || '')
-        : 'ABCDEFGH'[q.answer] + ') ' + q.choices[q.answer].text;
-      h += '<details class="miss"><summary><span><b>' + esc(q.area) + '</b> &mdash; ' +
-           esc(q.prompt.slice(0, 110)) + (q.prompt.length > 110 ? '&hellip;' : '') +
-           '<br><span class="muted small">' + yours + ' &middot; correct answer ' +
-           esc(right) + '</span></span></summary><div class="body">' +
-           '<p>' + esc(q.prompt) + '</p>' +
-           (!a || q.kind === 'num' || a.ok || !q.choices[a.pick].why ? '' :
-             '<p class="why">' + esc(q.choices[a.pick].why) + '</p>') +
-           '<h4 style="font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;' +
-           'color:var(--ink-3);margin:12px 0 6px">Worked solution</h4><ol>' +
-           q.steps.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') +
-           '</ol><pre>' + esc(q.formula) + '</pre>' +
-           (q.pitfall ? '<p class="pit">' + esc(q.pitfall) + '</p>' : '') +
-           '</div></details>';
-    });
+    missed.forEach(function(id){ h += qDetail(id); });
     h += '</div>';
   } else {
     h += '<div class="card"><h3>Review</h3><p>Nothing missed. Take a longer set or ' +
          'switch to hold-answers-until-the-end mode for exam conditions.</p></div>';
   }
 
+  /* Every question, in the order it was sat, right ones included. The review list above
+     only holds the misses, so without this there is no way to re-read a question she
+     got right - or to check whether she got it right by reasoning or by luck. */
+  h += '<div class="card"><h3>Every question &mdash; ' + sc.total + ' in this exam</h3>' +
+       '<p class="muted small" style="margin:0 0 12px">In the order you sat them. ' +
+       '&#10003; correct, &#10007; missed. Open any one for your answer, the correct ' +
+       'answer and the worked solution.</p>';
+  S.ids.forEach(function(id){ h += qDetail(id); });
+  h += '</div>';
+
   h += '<div class="row noprint" style="margin-bottom:18px">' +
        '<button id="bHist">&larr; Past exams</button></div>';
 
-  h += '<div class="row noprint"><button class="primary" id="bAgain">New exam</button>' +
+  // In review mode this is "Back to start", NOT "New exam": clearing the saved session
+  // from an old exam's page would silently bin an unfinished attempt.
+  h += '<div class="row noprint"><button class="primary" id="bAgain">' +
+       (S.review ? 'Back to start' : 'New exam') + '</button>' +
        '<button id="bPrint">Save as PDF</button>' +
        '<button id="bDl">Download a copy</button></div>';
 
   var sec = $('results');
   sec.innerHTML = h;
-  $('bAgain').onclick = function(){ store(SKEY, null); S = null; showStart(); };
+  $('bAgain').onclick = S.review
+    ? function(){ S = null; showStart(); }
+    : function(){ store(SKEY, null); S = null; showStart(); };
   if ($('bHist')) $('bHist').onclick = showHistory;
+  if ($('bHistTop2')) $('bHistTop2').onclick = showHistory;
   // Print and download are still available, just no longer pushed at her.
   if ($('bPrint')) $('bPrint').onclick = function(){ window.print(); };
   if ($('bDl')) $('bDl').onclick = downloadResults;
@@ -1063,23 +1111,37 @@ function showHistory(){
   }
 
   var best = Math.max.apply(null, list.map(function(x){ return x.right / x.total; }));
+  var legacy = list.filter(function(x){ return !x.ids; }).length;
   h += '<div class="card"><h3>' + list.length + ' exam' + (list.length === 1 ? '' : 's') +
-       ' taken</h3><table><thead><tr><th>When</th><th>Set</th><th>Score</th><th>%</th>' +
+       ' taken</h3>' +
+       '<p class="muted small" style="margin:0 0 12px">Click any row to reopen that exam ' +
+       'with every question, your answer, the correct answer and the worked solution.</p>' +
+       '<table><thead><tr><th>When</th><th>Set</th><th>Score</th><th>%</th>' +
        '<th>Time</th><th></th></tr></thead><tbody>';
   list.forEach(function(x, k){
     var pct = x.right / x.total * 100;
     var b = bandOf(pct);
     var mins = Math.round((x.secs || 0) / 60);
-    h += '<tr><td>' + new Date(x.at).toLocaleString() + '</td>' +
+    h += '<tr' + (x.ids ? ' class="openable" data-k="' + k + '"' : '') + '>' +
+         '<td>' + new Date(x.at).toLocaleString() + '</td>' +
          '<td>' + esc(x.label) + '</td>' +
          '<td class="sc-' + b.cls + '">' + x.right + '/' + x.total + '</td>' +
          '<td class="sc-' + b.cls + '">' + Math.round(pct) + '%' +
          (x.right / x.total === best && list.length > 1 ? ' &nbsp;<span class="band b-hi">best</span>' : '') +
          '</td><td>' + (mins ? mins + ' min' : '&mdash;') + '</td>' +
-         '<td>' + (x.ids ? '<button data-k="' + k + '">Open</button>'
+         '<td>' + (x.ids ? '<button data-k="' + k + '">View questions</button>'
                          : '<span class="muted small">score only</span>') + '</td></tr>';
   });
-  h += '</tbody></table></div>';
+  h += '</tbody></table>';
+  if (legacy){
+    // Attempts finished before question-level saving shipped kept only their score.
+    // Nothing can recover them, so say that plainly instead of leaving a dead row.
+    h += '<p class="muted small" style="margin:12px 0 0">' + legacy + ' older exam' +
+         (legacy === 1 ? '' : 's') + ' shows as <b>score only</b>. Those were finished ' +
+         'before the app started saving each question, so only the score and the area ' +
+         'breakdown survive. Every exam from now on reopens in full.</p>';
+  }
+  h += '</div>';
 
   // Per-area trend across every attempt that recorded area tallies.
   var areaRows = {};
@@ -1115,8 +1177,10 @@ function showHistory(){
   h += '<div class="row"><button class="primary" id="bBackStart">Back to start</button></div>';
   $('results').innerHTML = h;
   $('bBackStart').onclick = showStart;
-  $('results').querySelectorAll('button[data-k]').forEach(function(btn){
-    btn.onclick = function(){ openAttempt(list[+btn.getAttribute('data-k')]); };
+  // Bind the row, not the button: the button sits inside the row, so one handler on the
+  // row covers both the click she tried first and the one she can see.
+  Array.prototype.forEach.call($('results').querySelectorAll('tr.openable'), function(tr){
+    tr.onclick = function(){ openAttempt(list[+tr.getAttribute('data-k')]); };
   });
   scrollTop();
 }
@@ -1125,7 +1189,7 @@ function openAttempt(r){
   if (!r || !r.ids) return;
   S = {ids: r.ids, ans: r.ans, label: r.label, spent: r.secs || r.spent || 0,
        fb: r.fb || 'instant', ord: r.ord || 'mixed', limit: r.limit || 0,
-       i: 0, flags: {}, done: true, paused: true, started: r.at};
+       i: 0, flags: {}, done: true, paused: true, started: r.at, review: true};
   $('start').classList.add('hide');
   $('exam').classList.add('hide');
   $('scrim').classList.add('hide');

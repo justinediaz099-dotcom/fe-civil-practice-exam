@@ -45,7 +45,10 @@ GitHub Pages and send the link.
   covered it. A single-subject exam therefore updates only its own row and leaves the
   other thirteen intact, and the footnote counts how many of the 14 areas you have
   covered so far.
-- **Review list** of everything missed, with full solutions.
+- **Review list** of everything missed, with full solutions, and below it **every
+  question in the exam** in the order it was sat &mdash; right ones included, marked
+  &#10003; or &#10007;. Open any one for your answer, the correct answer, the named
+  mistake behind the option you picked, and the worked solution.
 - **Progress survives a reload or a closed tab.** Answers are written to browser
   storage the instant one is chosen; the clock is saved every 10 seconds and again on
   close. Reopening the page offers "Resume exam" with the answered count and time
@@ -56,10 +59,14 @@ GitHub Pages and send the link.
   is per browser and per file location, so a private window or moving the folder starts
   fresh.
 - **Past exams, in the app.** Every finished exam is stored **in full** &mdash; not just
-  its score &mdash; so any earlier attempt can be reopened and read on screen: its score,
-  per-area breakdown, and every missed question with its worked solution. The front page
-  has **Past exams**, which also pools per-area performance across all attempts and marks
-  your best result. The last 40 exams are kept.
+  its score &mdash; so any earlier attempt can be reopened and read on screen exactly as
+  it looked when you finished it: score, per-area breakdown, the review list, and every
+  single question with your answer beside the correct one. **Click anywhere on a row** in
+  **Past exams** to reopen it. That screen also pools per-area performance across all
+  attempts and marks your best result. The last 40 exams are kept.
+  Attempts finished before question-level saving shipped list as **score only** and
+  cannot be reopened &mdash; the questions were never recorded, so nothing can recover
+  them.
 - **No print dialog.** Nothing pops up when you finish. Save-as-PDF and Download are still
   on the results screen if you want a copy, but they are no longer pushed at you. The
   print stylesheet forces the light palette even in dark mode, because browsers drop
