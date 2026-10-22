@@ -1274,17 +1274,34 @@ function closeGoodLuck(){
    this exam will draw from each area. Once there is a finished attempt it shows that
    attempt's score per area, banded red / amber / green, so the specification table
    itself becomes the study plan. */
+/* Each area's MOST RECENT result, tracked independently.
+
+   Walk history newest-first and keep the first tally found for each area. A single-area
+   exam must not erase what you scored in the other thirteen: taking a Statics exam only
+   updates the Statics row, and every other row keeps the score from whichever exam last
+   covered it. Reading one attempt (the old behaviour) reset the whole table to
+   "not tested" after every single-subject run. */
+function latestPerArea(){
+  var hist = load(HKEY) || [];
+  var out = {};
+  for (var k = hist.length - 1; k >= 0; k--){
+    var x = hist[k];
+    if (!x.areas) continue;
+    Object.keys(x.areas).forEach(function(a){
+      var t = x.areas[a];
+      if (!out[a] && t && t[1]) out[a] = {r: t[0], n: t[1], at: x.at, label: x.label};
+    });
+  }
+  return out;
+}
+
 function paintSpec(counts){
   var tb = $('specTable').querySelector('tbody');
-  var last = null;
-  if (!counts){
-    var hist = load(HKEY) || [];
-    for (var k = hist.length - 1; k >= 0; k--){
-      if (hist[k].areas){ last = hist[k]; break; }
-    }
-  }
+  var latest = counts ? null : latestPerArea();
+  var tested = latest ? Object.keys(latest).length : 0;
+
   tb.innerHTML = '';
-  var lo = 0, hi = 0, mine = 0, gr = 0, gn = 0;
+  var lo = 0, hi = 0, mine = 0, gr = 0, gn = 0, newest = 0;
   AREAS.forEach(function(a){
     lo += a.low; hi += a.high;
     var cell, cls = '';
@@ -1292,32 +1309,35 @@ function paintSpec(counts){
       var c = counts[a.name] || 0;
       mine += c;
       cell = String(c);
-    } else if (last){
-      var t = last.areas[a.name];
-      if (t && t[1]){
-        var pct = t[0] / t[1] * 100, b = bandOf(pct);
-        gr += t[0]; gn += t[1];
-        cls = ' class="sc-' + b.cls + '"';
-        cell = t[0] + '/' + t[1] + ' &nbsp;<span class="band b-' + b.cls + '">' +
-               b.mark + ' ' + b.word + '</span>';
-      } else {
-        cell = '<span class="muted">not tested</span>';
-      }
     } else {
-      cell = '&mdash;';
+      var t = latest[a.name];
+      if (t){
+        var pct = t.r / t.n * 100, b = bandOf(pct);
+        gr += t.r; gn += t.n;
+        if (t.at > newest) newest = t.at;
+        cls = ' class="sc-' + b.cls + '"';
+        cell = t.r + '/' + t.n + ' &nbsp;<span class="band b-' + b.cls + '">' +
+               b.mark + ' ' + b.word + '</span>' +
+               '<br><span class="muted" style="font-size:11px">' +
+               new Date(t.at).toLocaleDateString() + '</span>';
+      } else {
+        cell = '<span class="muted">not tested yet</span>';
+      }
     }
     tb.innerHTML += '<tr><td>' + esc(a.name) + '</td><td>' + a.low + '&ndash;' +
       a.high + '</td><td' + cls + '>' + cell + '</td></tr>';
   });
+
   $('specReal').innerHTML = lo + '&ndash;' + hi;
-  $('specMine').innerHTML = counts ? String(mine)
-    : last ? (gr + '/' + gn) : '&mdash;';
+  $('specMine').innerHTML = counts ? String(mine) : (tested ? gr + '/' + gn : '&mdash;');
   $('specHead').innerHTML = counts ? 'On your exam'
-    : last ? 'Your last attempt' : 'On your exam';
-  $('specNote').innerHTML = last && !counts
-    ? 'Your last attempt (' + new Date(last.at).toLocaleDateString() + ') scored per ' +
-      'area above: red is under 55%, amber 55 to 79%, green 80% or better. Question ' +
-      'counts follow the NCEES FE Civil CBT exam specification effective July 2020.'
+    : (tested ? 'Your best-known score' : 'On your exam');
+  $('specNote').innerHTML = (!counts && tested)
+    ? 'Each row shows your <b>most recent</b> result in that area, with the date, from ' +
+      'whichever exam last covered it &mdash; so a single-subject exam only updates its ' +
+      'own row. ' + tested + ' of ' + AREAS.length + ' areas tested so far. Red is under ' +
+      '55%, amber 55 to 79%, green 80% or better. Question counts follow the NCEES FE ' +
+      'Civil CBT exam specification effective July 2020.'
     : 'Question counts follow the NCEES FE Civil CBT exam specification effective ' +
       'July 2020. The questions themselves are original, written for this trainer.';
   $('bankInfo').textContent = BANK.meta.count + ' questions in the bank, so each ' +

@@ -40,9 +40,11 @@ GitHub Pages and send the link.
   and a glyph as well as the colour, so it still reads correctly in grayscale or with
   colour-vision deficiency.
 - **The specification table doubles as the study plan.** Before the first attempt its
-  third column shows how many questions each area will contribute. Afterwards it shows
-  the last attempt's per-area score in the same red/amber/green bands, so the areas
-  needing work are visible the moment she opens the page.
+  third column shows how many questions each area will contribute. Afterwards each row
+  shows your **most recent** result in that area, with its date, from whichever exam last
+  covered it. A single-subject exam therefore updates only its own row and leaves the
+  other thirteen intact, and the footnote counts how many of the 14 areas you have
+  covered so far.
 - **Review list** of everything missed, with full solutions.
 - **Progress survives a reload or a closed tab.** Answers are written to browser
   storage the instant one is chosen; the clock is saved every 10 seconds and again on
