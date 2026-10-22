@@ -53,16 +53,15 @@ GitHub Pages and send the link.
   Closing the tab stops it; a refresh can only ever hand back up to 10 seconds. Storage
   is per browser and per file location, so a private window or moving the folder starts
   fresh.
-- **Saving results to share.** On finishing, the Save-as-PDF dialog opens on its own;
-  a "Save a copy to share" card and a "Download a copy" button are there if it is
-  dismissed. The download is a standalone HTML file with every worked solution expanded.
-  The print stylesheet forces the light palette even in dark mode &mdash; browsers drop
-  background colours when printing, so a dark theme would otherwise produce a
-  white-on-white page.
-- **Results survive the tab closing.** The finished attempt is persisted in full, so
-  "Open my last results" on the front page restores the score, the area breakdown, and
-  every missed question with its solution.
-- Attempt history is kept across sittings.
+- **Past exams, in the app.** Every finished exam is stored **in full** &mdash; not just
+  its score &mdash; so any earlier attempt can be reopened and read on screen: its score,
+  per-area breakdown, and every missed question with its worked solution. The front page
+  has **Past exams**, which also pools per-area performance across all attempts and marks
+  your best result. The last 40 exams are kept.
+- **No print dialog.** Nothing pops up when you finish. Save-as-PDF and Download are still
+  on the results screen if you want a copy, but they are no longer pushed at you. The
+  print stylesheet forces the light palette even in dark mode, because browsers drop
+  background colours when printing and a dark theme would otherwise print white-on-white.
 
 ## Privacy
 

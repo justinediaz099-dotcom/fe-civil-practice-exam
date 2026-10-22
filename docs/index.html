@@ -287,12 +287,13 @@
     </div>
 
     <div class="card" id="lastCard" style="display:none">
-      <h3>Your last results</h3>
+      <h3>Your exams</h3>
       <p id="lastTxt" class="small"></p>
       <div class="row">
         <button class="primary" id="bLast">Open my last results</button>
-        <span class="muted small">Full score, area breakdown, and every missed
-          question with its solution. You can save a PDF from there.</span>
+        <button id="bHistTop">Past exams</button>
+        <span class="muted small">Every exam you finish is kept here with its score,
+          area breakdown, and every missed question with its solution.</span>
       </div>
     </div>
 
@@ -931,14 +932,9 @@ function renderResults(){
        'benchmark rather than an official threshold.</p>';
   h += '</div>';
 
-  h += '<div class="card noprint" style="border-color:var(--accent)">' +
-       '<h3 style="color:var(--accent)">Save a copy to share</h3>' +
-       '<p class="small" style="margin-bottom:12px">The Save-as-PDF dialog opens on its ' +
-       'own in a moment &mdash; choose <b>Save as PDF</b> as the destination. If you ' +
-       'close it, either button below still works, and you can reopen these results ' +
-       'any time from the front page.</p>' +
-       '<div class="row"><button class="primary" id="bPrintTop">Save as PDF</button>' +
-       '<button id="bDlTop">Download a copy</button></div></div>';
+  h += '<p class="small muted noprint" style="margin:0 0 16px">These results are saved. ' +
+       'You can reopen this exam, and every earlier one, from <b>Past exams</b> on the ' +
+       'front page &mdash; nothing needs downloading.</p>';
 
   /* Area table: ONE hue, sorted weakest first, with the number printed beside every bar
      so the ranking never depends on reading a color. */
@@ -990,17 +986,8 @@ function renderResults(){
          'switch to hold-answers-until-the-end mode for exam conditions.</p></div>';
   }
 
-  var hist = load(HKEY) || [];
-  if (hist.length > 1){
-    h += '<div class="card noprint"><h3>Your attempts</h3><table><thead><tr>' +
-         '<th>When</th><th>Set</th><th>Score</th><th>%</th></tr></thead><tbody>';
-    hist.slice(-12).reverse().forEach(function(x){
-      h += '<tr><td>' + new Date(x.at).toLocaleString() + '</td><td>' + esc(x.label) +
-           '</td><td>' + x.right + '/' + x.total + '</td><td>' +
-           Math.round(x.right / x.total * 100) + '%</td></tr>';
-    });
-    h += '</tbody></table></div>';
-  }
+  h += '<div class="row noprint" style="margin-bottom:18px">' +
+       '<button id="bHist">&larr; Past exams</button></div>';
 
   h += '<div class="row noprint"><button class="primary" id="bAgain">New exam</button>' +
        '<button id="bPrint">Save as PDF</button>' +
@@ -1009,10 +996,10 @@ function renderResults(){
   var sec = $('results');
   sec.innerHTML = h;
   $('bAgain').onclick = function(){ store(SKEY, null); S = null; showStart(); };
-  $('bPrint').onclick = function(){ window.print(); };
-  $('bDl').onclick = downloadResults;
-  if ($('bPrintTop')) $('bPrintTop').onclick = function(){ window.print(); };
-  if ($('bDlTop')) $('bDlTop').onclick = downloadResults;
+  if ($('bHist')) $('bHist').onclick = showHistory;
+  // Print and download are still available, just no longer pushed at her.
+  if ($('bPrint')) $('bPrint').onclick = function(){ window.print(); };
+  if ($('bDl')) $('bDl').onclick = downloadResults;
 }
 
 function dateStamp(){
@@ -1047,6 +1034,106 @@ function downloadResults(){
   a.click();
   document.body.removeChild(a);
   setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+}
+
+/* ---------- Past exams ---------- */
+function attempts(){
+  // Newest first. Only attempts stored with full detail can be reopened; older
+  // score-only rows (written before this version) still list, but cannot open.
+  return (load(HKEY) || []).slice().reverse();
+}
+
+function showHistory(){
+  $('start').classList.add('hide');
+  $('exam').classList.add('hide');
+  $('scrim').classList.add('hide');
+  $('results').classList.remove('hide');
+  ['pScore', 'pProg', 'pTime', 'bPause'].forEach(function(i){ $(i).classList.add('hide'); });
+  $('topbar').classList.add('hide');
+  stopTimer();
+
+  var list = attempts();
+  var h = '<h1 style="margin-top:22px">Past exams</h1>';
+  if (!list.length){
+    h += '<div class="card"><p>No finished exams yet. Your results will collect here.</p>' +
+         '<button class="primary" id="bBackStart">Back</button></div>';
+    $('results').innerHTML = h;
+    $('bBackStart').onclick = showStart;
+    return;
+  }
+
+  var best = Math.max.apply(null, list.map(function(x){ return x.right / x.total; }));
+  h += '<div class="card"><h3>' + list.length + ' exam' + (list.length === 1 ? '' : 's') +
+       ' taken</h3><table><thead><tr><th>When</th><th>Set</th><th>Score</th><th>%</th>' +
+       '<th>Time</th><th></th></tr></thead><tbody>';
+  list.forEach(function(x, k){
+    var pct = x.right / x.total * 100;
+    var b = bandOf(pct);
+    var mins = Math.round((x.secs || 0) / 60);
+    h += '<tr><td>' + new Date(x.at).toLocaleString() + '</td>' +
+         '<td>' + esc(x.label) + '</td>' +
+         '<td class="sc-' + b.cls + '">' + x.right + '/' + x.total + '</td>' +
+         '<td class="sc-' + b.cls + '">' + Math.round(pct) + '%' +
+         (x.right / x.total === best && list.length > 1 ? ' &nbsp;<span class="band b-hi">best</span>' : '') +
+         '</td><td>' + (mins ? mins + ' min' : '&mdash;') + '</td>' +
+         '<td>' + (x.ids ? '<button data-k="' + k + '">Open</button>'
+                         : '<span class="muted small">score only</span>') + '</td></tr>';
+  });
+  h += '</tbody></table></div>';
+
+  // Per-area trend across every attempt that recorded area tallies.
+  var areaRows = {};
+  list.forEach(function(x){
+    if (!x.areas) return;
+    Object.keys(x.areas).forEach(function(a){
+      var t = areaRows[a] || (areaRows[a] = [0, 0]);
+      t[0] += x.areas[a][0];
+      t[1] += x.areas[a][1];
+    });
+  });
+  var keys = Object.keys(areaRows);
+  if (keys.length){
+    h += '<div class="card"><h3>Across all your exams &mdash; weakest first</h3>' +
+         '<table><thead><tr><th>Area</th><th>Correct</th><th>%</th>' +
+         '<th class="barcell"></th><th>Status</th></tr></thead><tbody>';
+    keys.map(function(a){
+      return {a: a, r: areaRows[a][0], n: areaRows[a][1],
+              pct: areaRows[a][0] / areaRows[a][1] * 100};
+    }).sort(function(x, y){ return x.pct - y.pct; }).forEach(function(r){
+      var b = bandOf(r.pct);
+      h += '<tr><td>' + esc(r.a) + '</td><td>' + r.r + '/' + r.n + '</td>' +
+           '<td class="sc-' + b.cls + '">' + Math.round(r.pct) + '%</td>' +
+           '<td class="barcell"><span class="abar"><i class="' + b.cls +
+           '" style="width:' + r.pct + '%"></i></span></td>' +
+           '<td><span class="band b-' + b.cls + '">' + b.mark + ' ' + b.word +
+           '</span></td></tr>';
+    });
+    h += '</tbody></table><p class="muted small" style="margin:12px 0 0">Pooled over ' +
+         'every exam, so it settles down as you take more.</p></div>';
+  }
+
+  h += '<div class="row"><button class="primary" id="bBackStart">Back to start</button></div>';
+  $('results').innerHTML = h;
+  $('bBackStart').onclick = showStart;
+  $('results').querySelectorAll('button[data-k]').forEach(function(btn){
+    btn.onclick = function(){ openAttempt(list[+btn.getAttribute('data-k')]); };
+  });
+  scrollTop();
+}
+
+function openAttempt(r){
+  if (!r || !r.ids) return;
+  S = {ids: r.ids, ans: r.ans, label: r.label, spent: r.secs || r.spent || 0,
+       fb: r.fb || 'instant', ord: r.ord || 'mixed', limit: r.limit || 0,
+       i: 0, flags: {}, done: true, paused: true, started: r.at};
+  $('start').classList.add('hide');
+  $('exam').classList.add('hide');
+  $('scrim').classList.add('hide');
+  $('results').classList.remove('hide');
+  ['pScore', 'pProg', 'pTime', 'bPause'].forEach(function(i){ $(i).classList.add('hide'); });
+  $('topbar').classList.add('hide');
+  renderResults();
+  scrollTop();
 }
 
 /* Re-open the last finished attempt in full. Without this, closing the results tab
@@ -1085,11 +1172,14 @@ function finish(){
     t[1]++;
     if (S.ans[id] && S.ans[id].ok) t[0]++;
   });
+  // EVERY attempt is stored in full, not just its score, so any past exam can be reopened
+  // and read on screen. A 110-question attempt is only a few KB, so 40 of them sit well
+  // inside the localStorage budget.
   var hist = load(HKEY) || [];
   hist.push({at: Date.now(), label: S.label, right: sc.right, total: sc.total,
-             secs: S.spent, areas: byArea});
-  store(HKEY, hist.slice(-50));
-  // Keep the full attempt so the results page can be reopened after the tab closes.
+             secs: S.spent, areas: byArea,
+             ids: S.ids, ans: S.ans, fb: S.fb, ord: S.ord, limit: S.limit});
+  store(HKEY, hist.slice(-40));
   store(RKEY, {at: Date.now(), ids: S.ids, ans: S.ans, label: S.label,
                spent: S.spent, fb: S.fb, ord: S.ord, limit: S.limit});
   store(SKEY, null);
@@ -1100,11 +1190,8 @@ function finish(){
   $('topbar').classList.add('hide');
   renderResults();
   scrollTop();
-  // Open the Save-as-PDF dialog without her having to find a button. Delayed so the
-  // results have painted first, and only on a genuine finish - never on a reopen.
-  setTimeout(function(){
-    try { window.print(); } catch (e) { /* blocked: both buttons still work */ }
-  }, 1200);
+  // No auto-print. Results live in the app and every attempt is browsable from the front
+  // page, so a print dialog firing on its own was an interruption, not a feature.
 }
 
 /* ------------------------------------------------------------------ screens */
@@ -1124,9 +1211,11 @@ function showStart(){
     lastR.ids.forEach(function(id){
       if (lastR.ans[id] && lastR.ans[id].ok) r++;
     });
-    $('lastTxt').textContent = lastR.label + ': scored ' + r + ' of ' +
+    var n = (load(HKEY) || []).length;
+    $('lastTxt').textContent = 'Last exam: ' + lastR.label + ', scored ' + r + ' of ' +
       lastR.ids.length + ' (' + Math.round(r / lastR.ids.length * 100) + '%) on ' +
-      new Date(lastR.at).toLocaleString() + '.';
+      new Date(lastR.at).toLocaleString() + '.' +
+      (n > 1 ? ' ' + n + ' exams saved in total.' : '');
   }
 
   var saved = load(SKEY);
@@ -1273,6 +1362,7 @@ $('bStart').onclick = function(){
 };
 $('bBegin').onclick = closeGoodLuck;
 $('bLast').onclick = openLastResults;
+$('bHistTop').onclick = showHistory;
 $('bResume').onclick = function(){
   S = load(SKEY);
   if (!S){ showStart(); return; }
